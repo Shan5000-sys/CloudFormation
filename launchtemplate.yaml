@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to create only a Launch Template with Security Group'
+
+Resources:
+  # Web Server Security Group
+  WebServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Enable HTTP and SSH Access'
+      VpcId: !Ref MyVPC  # Ensure MyVPC is defined
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: 'tcp'
+          FromPort: 22
+          ToPort: 22
+          CidrIp: '0.0.0.0/0'
+      Tags:
+        - Key: Name
+          Value: WebServerSecurityGroup
+
+  # Launch Template
+  MyLaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: "MyLaunchTemplate"
+      LaunchTemplateData:
+        ImageId: 'ami-0d5f18fbcad6fd6d6'
+        InstanceType: 't2.micro'
+        SecurityGroupIds:
+          - !Ref WebServerSecurityGroup
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum install -y httpd
+            systemctl start httpd
+            systemctl enable httpd
+            echo "Hello from Auto Scaling Instance" > /var/www/html/index.html
+          

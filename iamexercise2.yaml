@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Attach an existing IAM User to a new IAM Group with a Policy.
+
+Parameters:
+  ExistingIAMUserName:
+    Description: Enter the existing IAM User's name
+    Type: String
+
+Resources:
+  # Create IAM Group
+  MyIAMGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: ShanIAM
+
+  # Create IAM Policy and attach it to the IAM Group
+  MyIAMPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: MyIAMPolicy
+      Groups:
+        - !Ref MyIAMGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetObject
+            Resource: "*"
+
+  # Attach the existing IAM User to the IAM Group
+  AttachExistingUserToGroup:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref MyIAMGroup
+      Users:
+        - !Ref ExistingIAMUserName
+
+  # IAM Role for EC2
+  MyIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: "MyEC2IAMRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/PowerUserAccess'
+
+Outputs:
+  IAMGroupName:
+    Description: IAM Group Created
+    Value: !Ref MyIAMGroup
+  
+  AttachedIAMUser:
+    Description: Existing IAM User attached to the Group
+    Value: !Ref ExistingIAMUserName
